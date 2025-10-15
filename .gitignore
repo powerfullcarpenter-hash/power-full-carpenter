@@ -1,0 +1,21 @@
+# Dependencias
+# Ignora las dependencias de ambas subcarpetas
+/backend/node_modules
+/frontend/node_modules
+
+# Archivos de Entorno (Contienen credenciales privadas)
+# Ignora los .env de ambas subcarpetas
+/backend/.env
+/frontend/.env
+/frontend/.env.development
+
+# Directorios de Build del Frontend (Vite/React)
+# Ignora la carpeta de salida generada por Vite/npm run build
+/frontend/dist
+
+# VSC: Directorios de configuración específicos del editor
+.vscode/
+
+# Logs y otros archivos temporales
+npm-debug.log*
+.DS_Store
