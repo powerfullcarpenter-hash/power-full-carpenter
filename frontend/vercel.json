@@ -11,6 +11,11 @@
       "dest": "https://power-full-carpenter.onrender.com/api/$1"
     },
     {
+      "src": "^/(assets|vite|favicon\\.ico|manifest\\.json|robots\\.txt)(.*)",
+      "headers": { "Cache-Control": "public, max-age=31536000, immutable" },
+      "dest": "/$1$2"
+    },
+    {
       "src": "^/(.*)",
       "dest": "/index.html"
     }
