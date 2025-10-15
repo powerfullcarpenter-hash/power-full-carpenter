@@ -2,12 +2,24 @@
   "version": 2,
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "^/api/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      },
       "dest": "https://power-full-carpenter.onrender.com/api/$1"
     },
     {
-      "src": "/(.*)",
+      "src": "^/(.*)",
       "dest": "/index.html"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://power-full-carpenter.vercel.app/$1",
+      "statusCode": 308
     }
   ]
 }
