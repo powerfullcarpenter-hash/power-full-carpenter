@@ -21,10 +21,15 @@ async function tiempos(req, res) {
 
 async function consumo(req, res) {
   try {
-    const { pedido_id } = req.query;
+    const raw = req.query.pedido_id;
+    const pedido_id = raw !== undefined && raw !== null && String(raw).trim() !== ""
+      ? Number(raw)
+      : null;
+
     const data = await reportService.consumo(pedido_id);
     res.json(data);
   } catch (e) {
+    console.error("Error en /reports/consumo:", e);
     res.status(500).json({ error: e.message });
   }
 }
