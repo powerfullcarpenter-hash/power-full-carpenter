@@ -6,7 +6,7 @@ import autoTable from "jspdf-autotable";
 export default function ConsumoReport() {
   const [data, setData] = useState([]);
   const [pedidoId, setPedidoId] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // ✅ aquí estaba el problema
 
   const normalizeRow = (r) => ({
     ...r,
@@ -19,12 +19,14 @@ export default function ConsumoReport() {
   });
 
   const fetchData = async () => {
-    setLoading(true);
+    setLoading(true); // ✅ ahora sí existe
     try {
-      const res = await getConsumo(pedidoId || null);
+      const id = pedidoId?.toString().trim() ? Number(pedidoId) : null;
+      const res = await getConsumo(id);
       setData(Array.isArray(res) ? res.map(normalizeRow) : []);
     } catch (err) {
       console.error("Error obteniendo consumo:", err);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -34,7 +36,6 @@ export default function ConsumoReport() {
     fetchData();
   }, []);
 
-  // 🔹 Exportar PDF
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     doc.setFontSize(14);
@@ -53,13 +54,12 @@ export default function ConsumoReport() {
         d.unidad_medida,
       ]),
       styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [37, 99, 235] }, // Azul corporativo
+      headStyles: { fillColor: [37, 99, 235] },
     });
 
     doc.save(`consumo${pedidoId ? `_pedido_${pedidoId}` : ""}.pdf`);
   };
 
-  // 🔹 Exportar CSV
   const exportCSV = () => {
     if (!data.length) return;
     const rows = [
@@ -73,15 +73,13 @@ export default function ConsumoReport() {
       ]),
     ];
     const csvContent =
-      "data:text/csv;charset=utf-8," +
-      rows.map((r) => r.join(",")).join("\n");
+      "data:text/csv;charset=utf-8," + rows.map((r) => r.join(",")).join("\n");
     const link = document.createElement("a");
     link.href = encodeURI(csvContent);
     link.download = "consumo.csv";
     link.click();
   };
 
-  // 🔹 Totales por insumo
   const totalPorInsumo = data.reduce((acc, item) => {
     acc[item.insumo] = (acc[item.insumo] || 0) + Number(item.cantidad || 0);
     return acc;
@@ -89,14 +87,12 @@ export default function ConsumoReport() {
 
   return (
     <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-      {/* 🔹 Encabezado */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <h3 className="text-2xl font-extrabold text-gray-800 flex items-center">
           📦 Reporte de Consumo de Insumos
         </h3>
       </div>
 
-      {/* 🔹 Filtros */}
       <div className="flex flex-wrap items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-4">
         <input
           type="number"
@@ -131,14 +127,12 @@ export default function ConsumoReport() {
         </button>
       </div>
 
-      {/* 🔹 Resumen */}
       <p className="text-gray-700 font-medium">
-        Total registros:{" "}
-        <span className="font-bold">{data.length}</span> • Insumos distintos:{" "}
+        Total registros: <span className="font-bold">{data.length}</span> •
+        Insumos distintos:{" "}
         <span className="font-bold">{Object.keys(totalPorInsumo).length}</span>
       </p>
 
-      {/* 🔹 Tabla principal */}
       <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
         <table className="w-full border-collapse text-sm text-gray-700">
           <thead className="bg-gray-100 text-gray-700 font-semibold">
@@ -184,7 +178,6 @@ export default function ConsumoReport() {
         </table>
       </div>
 
-      {/* 🔹 Totales agrupados */}
       {Object.keys(totalPorInsumo).length > 0 && (
         <div className="mt-6 bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
           <h4 className="font-semibold text-gray-800 mb-2">
