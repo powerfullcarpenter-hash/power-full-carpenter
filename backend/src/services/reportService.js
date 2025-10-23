@@ -54,24 +54,53 @@ async function tiempos() {
 
 
 async function consumo(pedido_id) {
-  const params = [];
-  let where = `WHERE m.tipo_movimiento = 'SALIDA' AND m.pedido_id IS NOT NULL`;
-  if (pedido_id) {
-    params.push(pedido_id);
-    where += ` AND m.pedido_id = $${params.length}`;
-  }
-  const sql = `SELECT p.pedido_id,
-                      p.nombre_cliente AS pedido,
-                      i.nombre AS insumo,
-                      SUM(-m.cantidad) AS cantidad,
-                      i.unidad_medida
-               FROM movimientos_inventario m
-               JOIN pedidos p ON p.pedido_id = m.pedido_id
-               JOIN insumos i ON i.insumo_id = m.insumo_id
-               ${where}
-               GROUP BY p.pedido_id, p.nombre_cliente, i.nombre, i.unidad_medida
-               ORDER BY p.pedido_id, insumo`;
-  const res = await pool.query(sql, params);
+  const id = pedido_id ? Number(pedido_id) : null;
+
+  const sql = `
+    WITH base AS (
+      -- 🔹 A) Movimientos SALIDA (registrados directamente al pedido desde inventario)
+      SELECT 
+        m.pedido_id AS pedido_id,
+        p.nombre_cliente,
+        i.nombre AS insumo,
+        ABS(m.cantidad)::numeric AS cantidad,
+        i.unidad_medida
+      FROM movimientos_inventario m
+      JOIN pedidos p ON p.pedido_id = m.pedido_id
+      JOIN insumos i ON i.insumo_id = m.insumo_id
+      WHERE m.tipo_movimiento = 'SALIDA'
+        AND m.pedido_id IS NOT NULL
+
+      UNION ALL
+
+      -- 🔹 B) Movimientos AJUSTE (consumos rápidos realizados por los operarios desde tareas)
+      SELECT 
+        t.pedido_id AS pedido_id,
+        p2.nombre_cliente,
+        i.nombre AS insumo,
+        ABS(m.cantidad)::numeric AS cantidad,
+        i.unidad_medida
+      FROM movimientos_inventario m
+      JOIN tasks t   ON t.task_id = m.tarea_id
+      JOIN pedidos p2 ON p2.pedido_id = t.pedido_id
+      JOIN insumos i ON i.insumo_id = m.insumo_id
+      WHERE m.tipo_movimiento = 'AJUSTE'
+        AND m.tarea_id IS NOT NULL
+    )
+
+    SELECT 
+      pedido_id,
+      nombre_cliente,
+      insumo,
+      SUM(cantidad)::numeric AS cantidad,
+      unidad_medida
+    FROM base
+    WHERE ($1::int IS NULL OR pedido_id = $1::int)
+    GROUP BY pedido_id, nombre_cliente, insumo, unidad_medida
+    ORDER BY pedido_id, insumo;
+  `;
+
+  const res = await pool.query(sql, [id]);
   return res.rows;
 }
 
